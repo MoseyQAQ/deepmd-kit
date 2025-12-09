@@ -353,6 +353,7 @@ class LESFittingNet(InvarFitting):
             # reshape the cell to (nframe, 3, 3)
             if cell is not None and cell.dim() == 2 and cell.shape[1] == 9:
                 cell_les= cell.view(nf, 3, 3)
+                cell_les.to(device=q_latent.device)
             q = q_latent.squeeze(-1)
             q_flat = q.reshape(-1)
             r_flat = coord_loc.reshape(-1, 3)
