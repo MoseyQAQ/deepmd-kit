@@ -2,6 +2,7 @@
 from typing import (
     Any,
     Callable,
+    Dict,
     Optional,
 )
 
@@ -182,6 +183,9 @@ def make_model(T_AtomicModel: type[BaseAtomicModel]) -> type:
                 mixed_types=True,
                 box=bb,
             )
+            comm_dict: Dict[str, torch.Tensor] = {}
+            if bb is not None:
+                comm_dict["box"] = bb
             model_predict_lower = self.forward_common_lower(
                 extended_coord,
                 extended_atype,
@@ -190,7 +194,7 @@ def make_model(T_AtomicModel: type[BaseAtomicModel]) -> type:
                 do_atomic_virial=do_atomic_virial,
                 fparam=fp,
                 aparam=ap,
-                comm_dict={'box': bb},
+                comm_dict=comm_dict,
             )
             model_predict = communicate_extended_output(
                 model_predict_lower,

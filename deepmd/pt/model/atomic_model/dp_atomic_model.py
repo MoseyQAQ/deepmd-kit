@@ -266,7 +266,9 @@ class DPAtomicModel(BaseAtomicModel):
             self.eval_descriptor_list.append(descriptor.detach())
         # energy, force
         if getattr(self.fitting_net, "var_name", None) == "les":
-            cell = comm_dict.get("box", None)
+            cell: Optional[torch.Tensor] = None
+            if comm_dict is not None:
+                cell = comm_dict.get("box")
             fit_ret = self.fitting_net(
                 descriptor,
                 atype,

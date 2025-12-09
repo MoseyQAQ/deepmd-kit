@@ -350,10 +350,13 @@ class LESFittingNet(InvarFitting):
             nf, nloc = atype.shape
             coord_loc = coord_ext[:, :nloc, :]
 
-            # reshape the cell to (nframe, 3, 3)
-            if cell is not None and cell.dim() == 2 and cell.shape[1] == 9:
-                cell_les= cell.view(nf, 3, 3)
-                cell_les.to(device=q_latent.device)
+            if cell is not None:
+                cell_les = cell.view(nf, 3, 3).to(device=q_latent.device, dtype=env.GLOBAL_PT_FLOAT_PRECISION)
+            else:
+                # In LES, the `all-zero` cell represents the non-PBC system
+                cell_les = torch.zeros((nf, 3, 3), device=q_latent.device, dtype=env.GLOBAL_PT_FLOAT_PRECISION)
+            assert isinstance(cell_les, torch.Tensor) # make TorchScript Happy
+
             q = q_latent.squeeze(-1)
             q_flat = q.reshape(-1)
             r_flat = coord_loc.reshape(-1, 3)
