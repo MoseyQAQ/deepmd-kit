@@ -66,6 +66,14 @@ class DeepPot(DeepEval):
                         atomic=True,
                         r_hessian=True,
                     ),
+                    OutputVariableDef(
+                        "q_latent",
+                        shape=[1],
+                        reducible=False,
+                        r_differentiable=False,
+                        c_differentiable=False,
+                        atomic=True,
+                    ),
                 ]
             )
         )
@@ -146,6 +154,7 @@ class DeepPot(DeepEval):
         fparam: Optional[np.ndarray] = None,
         aparam: Optional[np.ndarray] = None,
         mixed_type: bool = False,
+        return_q_latent: bool = False,
         **kwargs: Any,
     ) -> tuple[np.ndarray, ...]:
         """Evaluate energy, force, and virial. If atomic is True,
@@ -244,6 +253,10 @@ class DeepPot(DeepEval):
                 force,
                 virial,
             )
+        if return_q_latent and "q_latent" in results:
+            q_latent = results["q_latent"].reshape(nframes, natoms, 1)
+            result = (*list(result), q_latent)
+            
         if self.deep_eval.get_has_spin():
             force_mag = results["energy_derv_r_mag"].reshape(nframes, natoms, 3)
             mask_mag = results["mask_mag"].reshape(nframes, natoms, 1)

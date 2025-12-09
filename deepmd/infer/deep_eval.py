@@ -72,6 +72,10 @@ class DeepEvalBackend(ABC):
         "dos_redu": "dos",
         "mask_mag": "mask_mag",
         "mask": "mask",
+        "q_latent": "q_latent",
+        "q_latent_derv_r": "q_latent_derv_r",
+        "q_latent_derv_c": "q_latent_derv_c",
+        "q_latent_derv_c_redu": "q_latent_derv_c_redu",
         # old models in v1
         "global_polar": "global_polar",
         "wfc": "wfc",

@@ -122,6 +122,8 @@ class EnergyModel(DPModelCommon, DPEnergyModel_):
                     )
             else:
                 model_predict["force"] = model_ret["dforce"]
+            if "q_latent" in model_ret:
+                model_predict["q_latent"] = model_ret["q_latent"]
             if "mask" in model_ret:
                 model_predict["mask"] = model_ret["mask"]
             if self._hessian_enabled:
@@ -169,6 +171,8 @@ class EnergyModel(DPModelCommon, DPEnergyModel_):
             else:
                 assert model_ret["dforce"] is not None
                 model_predict["dforce"] = model_ret["dforce"]
+            if "q_latent" in model_ret:
+                model_predict["q_latent"] = model_ret["q_latent"]
         else:
             model_predict = model_ret
         return model_predict

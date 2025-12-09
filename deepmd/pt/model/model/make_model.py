@@ -190,6 +190,7 @@ def make_model(T_AtomicModel: type[BaseAtomicModel]) -> type:
                 do_atomic_virial=do_atomic_virial,
                 fparam=fp,
                 aparam=ap,
+                comm_dict={'box': bb},
             )
             model_predict = communicate_extended_output(
                 model_predict_lower,

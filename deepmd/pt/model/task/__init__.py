@@ -14,6 +14,7 @@ from .dos import (
 from .ener import (
     EnergyFittingNet,
     EnergyFittingNetDirect,
+    LESFittingNet
 )
 from .fitting import (
     Fitting,
@@ -35,6 +36,7 @@ __all__ = [
     "DipoleFittingNet",
     "EnergyFittingNet",
     "EnergyFittingNetDirect",
+    "LESFittingNet",
     "Fitting",
     "PolarFittingNet",
     "PropertyFittingNet",

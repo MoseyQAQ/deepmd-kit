@@ -260,3 +260,113 @@ class EnergyFittingNetDirect(Fitting):
             "energy": outs.to(env.GLOBAL_PT_FLOAT_PRECISION),
             "dforce": vec_out,
         }
+
+@Fitting.register("les")
+@fitting_check_output
+class LESFittingNet(InvarFitting):
+    def __init__(
+        self,
+        ntypes: int,
+        dim_descrpt: int,
+        neuron: list[int] = [128, 128, 128],
+        bias_atom_e: Optional[torch.Tensor] = None,
+        resnet_dt: bool = True,
+        numb_fparam: int = 0,
+        numb_aparam: int = 0,
+        dim_case_embd: int = 0,
+        activation_function: str = "tanh",
+        precision: str = DEFAULT_PRECISION,
+        mixed_types: bool = True,
+        seed: Optional[Union[int, list[int]]] = None,
+        type_map: Optional[list[str]] = None,
+        default_fparam: Optional[list] = None,
+        les_config: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            "les",
+            ntypes,
+            dim_descrpt,
+            2,
+            neuron=neuron,
+            bias_atom_e=bias_atom_e,
+            resnet_dt=resnet_dt,
+            numb_fparam=numb_fparam,
+            numb_aparam=numb_aparam,
+            dim_case_embd=dim_case_embd,
+            activation_function=activation_function,
+            precision=precision,
+            mixed_types=mixed_types,
+            seed=seed,
+            type_map=type_map,
+            default_fparam=default_fparam,
+            **kwargs,
+        )
+        try:
+            from les import Les
+            # use atomwise  is disabled by default
+            les_arguments = {'use_atomwise': False} if les_config is None else les_config
+            self._les = Les(les_arguments = les_arguments)
+        except ImportError:
+            raise ImportError("LESFittingNet requires LES module. See details at https://github.com/ChengUCB/les")
+
+    def output_def(self) -> FittingOutputDef:
+        return FittingOutputDef(
+            [
+                OutputVariableDef(
+                    "energy",
+                    [1],
+                    reducible=True,
+                    r_differentiable=True,
+                    c_differentiable=True,
+                ),
+                OutputVariableDef(
+                    "q_latent",
+                    [1],
+                    reducible=False,
+                    r_differentiable=True,
+                    c_differentiable=True,
+                ),
+            ]
+        )
+
+    def forward(
+        self,
+        descriptor: torch.Tensor,
+        atype: torch.Tensor,
+        gr: Optional[torch.Tensor] = None,
+        g2: Optional[torch.Tensor] = None,
+        h2: Optional[torch.Tensor] = None,
+        fparam: Optional[torch.Tensor] = None,
+        aparam: Optional[torch.Tensor] = None,
+        coord_ext: Optional[torch.Tensor] = None,
+        cell: Optional[torch.Tensor] = None,
+    ) -> dict[str, torch.Tensor]:
+        out = self._forward_common(descriptor, atype, gr, g2, h2, fparam, aparam)
+        outs = out[self.var_name].to(env.GLOBAL_PT_FLOAT_PRECISION)
+        energy = outs[..., :1]
+        q_latent = outs[..., 1:2]
+        if coord_ext is not None:
+            nf, nloc = atype.shape
+            coord_loc = coord_ext[:, :nloc, :]
+
+            # reshape the cell to (nframe, 3, 3)
+            if cell is not None and cell.dim() == 2 and cell.shape[1] == 9:
+                cell_les= cell.view(nf, 3, 3)
+            q = q_latent.squeeze(-1)
+            q_flat = q.reshape(-1)
+            r_flat = coord_loc.reshape(-1, 3)
+            batch = torch.arange(nf, device=r_flat.device).repeat_interleave(nloc)
+
+            # by default, only compute energy; need update 
+            les_result = self._les(latent_charges=q_flat, positions=r_flat, 
+                                    cell=cell_les, batch=batch, compute_energy=True)
+            e_lr = les_result.get("E_lr", None)
+            if e_lr is not None:
+                pot_per_atom = (e_lr.view(nf, 1).to(energy.dtype) / nloc).view(nf, 1, 1).expand(nf, nloc, 1)
+                energy = energy + pot_per_atom 
+
+        result = {"energy": energy, "q_latent": q_latent}
+        if "middle_output" in out:
+            result["middle_output"] = out["middle_output"].to(env.GLOBAL_PT_FLOAT_PRECISION)
+        return result
