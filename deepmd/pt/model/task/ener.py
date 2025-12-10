@@ -2,6 +2,7 @@
 import logging
 from typing import (
     Any,
+    Dict,
     Optional,
     Union,
 )
@@ -281,6 +282,7 @@ class LESFittingNet(InvarFitting):
         type_map: Optional[list[str]] = None,
         default_fparam: Optional[list] = None,
         les_config: Optional[str] = None,
+        les_arguments: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -304,8 +306,17 @@ class LESFittingNet(InvarFitting):
         )
         try:
             from les import Les
-            # use atomwise  is disabled by default
-            les_arguments = {'use_atomwise': False} if les_config is None else les_config
+            
+            if les_arguments is not None:
+                pass 
+            elif les_config is not None:
+                import yaml
+                with open(les_config, 'r') as file:
+                    les_arguments = yaml.safe_load(file)
+                    if les_arguments is None:
+                        les_arguments = {}
+            else:
+                les_arguments = {'use_atomwise': False}
             self._les = Les(les_arguments = les_arguments)
         except ImportError:
             raise ImportError("LESFittingNet requires LES module. See details at https://github.com/ChengUCB/les")

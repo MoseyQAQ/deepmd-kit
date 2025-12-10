@@ -253,10 +253,11 @@ class DeepPot(DeepEval):
                 force,
                 virial,
             )
+
+        # LES related
         if return_q_latent and "q_latent" in results:
             q_latent = results["q_latent"].reshape(nframes, natoms, 1)
             result = (*list(result), q_latent)
-            
         if self.deep_eval.get_has_spin():
             force_mag = results["energy_derv_r_mag"].reshape(nframes, natoms, 3)
             mask_mag = results["mask_mag"].reshape(nframes, natoms, 1)
