@@ -31,6 +31,7 @@ from .test_permutation import (
     model_se_e2_a,
     model_spin,
     model_zbl,
+    model_les,
 )
 
 
@@ -250,4 +251,16 @@ class TestEnergyModelSpinSeAForce(unittest.TestCase, ForceTest):
         model_params = copy.deepcopy(model_spin)
         self.type_split = False
         self.test_spin = True
+        self.model = get_model(model_params).to(env.DEVICE)
+
+class TestEnergyModelLESForce(unittest.TestCase, ForceTest):
+    def setUp(self) -> None:
+        model_params = copy.deepcopy(model_les)
+        self.test_spin = False
+        self.model = get_model(model_params).to(env.DEVICE)
+
+class TestEnergyModelLESVirial(unittest.TestCase, VirialTest):
+    def setUp(self) -> None:
+        model_params = copy.deepcopy(model_les)
+        self.test_spin = False
         self.model = get_model(model_params).to(env.DEVICE)

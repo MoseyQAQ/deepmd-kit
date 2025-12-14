@@ -311,6 +311,7 @@ class DeepEval(DeepEvalBackend):
         atomic: bool = False,
         fparam: Optional[np.ndarray] = None,
         aparam: Optional[np.ndarray] = None,
+        return_q_latent: bool = False,
         **kwargs: Any,
     ) -> dict[str, np.ndarray]:
         """Evaluate the energy, force and virial by using this DP.
@@ -357,7 +358,7 @@ class DeepEval(DeepEvalBackend):
         natoms, numb_test = self._get_natoms_and_nframes(
             coords, atom_types, len(atom_types.shape) > 1
         )
-        request_defs = self._get_request_defs(atomic)
+        request_defs = self._get_request_defs(atomic, return_q_latent=return_q_latent)
         if "spin" not in kwargs or kwargs["spin"] is None:
             out = self._eval_func(self._eval_model, numb_test, natoms)(
                 coords, cells, atom_types, fparam, aparam, request_defs
@@ -379,7 +380,7 @@ class DeepEval(DeepEvalBackend):
             )
         )
 
-    def _get_request_defs(self, atomic: bool) -> list[OutputVariableDef]:
+    def _get_request_defs(self, atomic: bool, return_q_latent: bool = False) -> list[OutputVariableDef]:
         """Get the requested output definitions.
 
         When atomic is True, all output_def are requested.
@@ -411,6 +412,8 @@ class DeepEval(DeepEvalBackend):
                     OutputVariableCategory.DERV_R_DERV_R,
                 )
             ]
+        if not return_q_latent:
+            output_defs = [x for x in output_defs if x.name != "q_latent"]
         if not self.get_has_hessian():
             output_defs = [
                 x

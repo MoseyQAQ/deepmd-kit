@@ -70,6 +70,9 @@ from .polar_model import (
 from .property_model import (
     PropertyModel,
 )
+from .les_model import (
+    LesModel,
+)
 from .spin_model import (
     SpinEnergyModel,
     SpinModel,
@@ -269,18 +272,37 @@ def get_standard_model(model_params: dict) -> BaseModel:
         modelcls = EnergyModel
     elif fitting_net_type == "property":
         modelcls = PropertyModel
+    elif fitting_net_type == "les":
+        modelcls = LesModel
     else:
         raise RuntimeError(f"Unknown fitting type: {fitting_net_type}")
 
-    model = modelcls(
-        descriptor=descriptor,
-        fitting=fitting,
-        type_map=model_params["type_map"],
-        atom_exclude_types=atom_exclude_types,
-        pair_exclude_types=pair_exclude_types,
-        preset_out_bias=preset_out_bias,
-        data_stat_protect=data_stat_protect,
-    )
+    # for Les Model, extra arguments are required
+    if fitting_net_type == "les":
+        les_config = model_params["fitting_net"].get("les_config", None)
+        les_arguments = model_params["fitting_net"].get("les_arguments", None)
+        model = modelcls(
+            descriptor=descriptor,
+            fitting=fitting,
+            type_map=model_params["type_map"],
+            atom_exclude_types=atom_exclude_types,
+            pair_exclude_types=pair_exclude_types,
+            preset_out_bias=preset_out_bias,
+            data_stat_protect=data_stat_protect,
+            les_config=les_config,
+            les_arguments=les_arguments,
+        )
+    else:
+        model = modelcls(
+            descriptor=descriptor,
+            fitting=fitting,
+            type_map=model_params["type_map"],
+            atom_exclude_types=atom_exclude_types,
+            pair_exclude_types=pair_exclude_types,
+            preset_out_bias=preset_out_bias,
+            data_stat_protect=data_stat_protect,
+        )
+
     if model_params.get("hessian_mode"):
         model.enable_hessian()
     model.model_def_script = json.dumps(model_params_old)
