@@ -35,6 +35,7 @@ LesModel_ = make_model(DPAtomicModel)
 @BaseModel.register("les")
 class LesModel(DPModelCommon, LesModel_):
     model_type = "les"
+    _last_cell_les: Optional[torch.Tensor]
 
     def __init__(
         self,
@@ -59,6 +60,7 @@ class LesModel(DPModelCommon, LesModel_):
             self._les = Les(les_arguments=les_arguments)
         except ImportError:
             raise ImportError("LesModel requires LES module. See `https://github.com/ChengUCB/les`")
+        self._last_cell_les = torch.jit.annotate(Optional[torch.Tensor], None)
 
     def translated_output_def(self) -> dict[str, Any]:
         out_def_data = self.model_output_def().get_data()
@@ -124,7 +126,7 @@ class LesModel(DPModelCommon, LesModel_):
 
         # Correct the virial
         if "energy_derv_c_redu" in model_predict:
-            cell_les = getattr(self, "_last_cell_les", None)
+            cell_les = self._last_cell_les
             virial_corr = self.correct_virial(model_predict["energy_redu"], cell_les)
             if virial_corr is not None:
                 model_predict["energy_derv_c_redu"] = (
@@ -238,7 +240,7 @@ class LesModel(DPModelCommon, LesModel_):
             model_predict["mask"] = model_ret["mask"]
         return model_predict
         
-    def correct_virial(self, energy, cell):
+    def correct_virial(self, energy: torch.Tensor, cell: Optional[torch.Tensor]) -> Optional[torch.Tensor]:
         if cell is None:
             return None
         if not cell.requires_grad:
