@@ -177,12 +177,14 @@ class LesFittingNet(GeneralFitting):
                     r_differentiable=True,
                     c_differentiable=True,
                 ),
+
+                # From Duo: don't need differentiable here for now.
                 OutputVariableDef(
                     "q_latent",
                     [self._net_out_dim()],
                     reducible=False,
-                    r_differentiable=True,
-                    c_differentiable=True,
+                    r_differentiable=False,
+                    c_differentiable=False,
                 ),
             ]
         )
